@@ -1,0 +1,4 @@
+D:/My_Code/C++Project/mycjson/cmake-build-debug/CMakeFiles/cjson.dir
+D:/My_Code/C++Project/mycjson/cmake-build-debug/CMakeFiles/cjson_test.dir
+D:/My_Code/C++Project/mycjson/cmake-build-debug/CMakeFiles/edit_cache.dir
+D:/My_Code/C++Project/mycjson/cmake-build-debug/CMakeFiles/rebuild_cache.dir
