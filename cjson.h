@@ -17,6 +17,7 @@ enum{
     C_PARSE_ROOT_NOT_SINGULAR,  /* 解析到不止一个值 */
     C_PARSE_INVALID_VALUE,  /* 解析错误 */
     C_PARSE_EXPECT_VALUE,
+    C_PARSE_NUMBER_TOO_BIG,
 };
 
 typedef struct c_value c_value;

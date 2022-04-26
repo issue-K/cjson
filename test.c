@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <math.h> /* HUGE_VAL*/
 #include "cjson.h"
 
 static int total_test = 0;
@@ -25,8 +26,28 @@ static int pass_test = 0;
     do{                                   \
         c_value v;\
         EXPECT_EQ_INT(expect_state,c_parse(&v,json) );\
-        EXPECT_EQ_INT(expect_type,c_get_type(&v) );\
+        EXPECT_EQ_INT(expect_type,c_get_type(&v) ); \
     }while(0)
+
+#define TEST_NUMBER(expect_number,json) \
+    do{                                 \
+        c_value v;                      \
+        EXPECT_EQ_INT(C_PARSE_OK,c_parse(&v,json) ); \
+        EXPECT_EQ_INT(C_NUMBER,c_get_type(&v)); \
+        EXPECT_EQ_INT(expect_number,c_get_number(&v) ); \
+    }while(0)
+static void test_parse_number(){
+    /* 测试数字合法的情况 */
+    TEST_NUMBER(0.0,"9e9999999999999");
+    TEST_NUMBER(0.0,"0");
+    TEST_NUMBER(0.0,"-0");
+
+    /* 下面检测一些不合法的情况 */
+    TEST_STATE_AND_TYPE("+0",C_UNKNOW,C_PARSE_INVALID_VALUE);
+    TEST_STATE_AND_TYPE("+1",C_UNKNOW,C_PARSE_INVALID_VALUE);
+    TEST_STATE_AND_TYPE(".123",C_UNKNOW,C_PARSE_INVALID_VALUE);
+    TEST_STATE_AND_TYPE("inf",C_UNKNOW,C_PARSE_INVALID_VALUE);
+}
 
 
 static void test_parse_expect_value(){
@@ -57,6 +78,8 @@ static void test_parse(){
     test_parse_ok();
     test_parse_invalid_value();
     test_parse_root_not_singular();
+
+    test_parse_number();
 }
 int main() {
     test_parse();
