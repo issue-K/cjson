@@ -7,6 +7,7 @@ typedef enum{
     C_FALSE,
     C_TRUE,
     C_NUMBER,
+    C_STRING,
 }c_type;
 
 /*
@@ -18,6 +19,11 @@ enum{
     C_PARSE_INVALID_VALUE,  /* 解析错误 */
     C_PARSE_EXPECT_VALUE,
     C_PARSE_NUMBER_TOO_BIG,
+    C_PARSE_INVALID_STRING_CHAR,  /* 解析字符串时,遇到不支持的字符 */
+    C_PARSE_MISS_QUOTATION_MARK, /* 解析字符串时缺少右引号 */
+    C_PARSE_INVALID_STRING_ESCAPE,
+    LEPT_PARSE_INVALID_UNICODE_HEX,  /* \uxxxx的格式不正确 */
+    C_PARSE_INVALID_UNICODE_SURROGATE,
 };
 
 typedef struct c_value c_value;
@@ -27,16 +33,33 @@ typedef struct c_value c_value;
  */
 struct c_value{
     union{
-        double n;
+        double n; /* number */
+        struct{ char* s; size_t len; }s; /* string */
     };
     c_type type;
 };
 
+#define c_init(v) do{ (v)->type = C_UNKNOW; }while(0)
+
 /* 解析json的入口 */
 int c_parse(c_value* v,const char* json);
+/* 释放c_value的空间 */
+void c_free(c_value* v);
 /*  获取值的类型 */
 c_type c_get_type(const c_value* v);
+
+
 /* 已知值是数字类型, 获取数字值*/
 double c_get_number(const c_value* v);
+/* 得到string长度 */
+size_t c_get_stringlen(const c_value* v);
+/* 得到string */
+const char* c_get_string(const c_value* v);
+
+/* 设置数字 */
+void c_set_number(c_value *v,double val);
+/* 设置string */
+void c_set_string(c_value* v,const char* s,size_t len);
+
 
 #endif
