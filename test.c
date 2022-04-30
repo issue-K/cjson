@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <math.h> /* HUGE_VAL*/
 #include <string.h>
+#include <assert.h>
 #include "cjson.h"
 
 static int total_test = 0;
@@ -20,9 +21,9 @@ static int pass_test = 0;
 #define EXPECT_EQ_DOUBLE(expect,actual) EXPECT_EQ_BASE( ((expect)==(actual)),expect,actual,"%.17g")
 #define EXPECT_EQ_STRING(expect,actual,len)\
     EXPECT_EQ_BASE( sizeof(expect)-1==len && memcmp(expect,actual,len)==0,expect,actual,"%s" )
-
+#define EXPECT_EQ_SIZE_T(expect, actual) EXPECT_EQ_BASE((expect) == (actual), (size_t)expect, (size_t)actual, "%zu")
 /*
- * æµ‹è¯•è§£æžçŠ¶æ€ç å’Œç±»åž‹æ˜¯å¦å’Œé¢„æœŸä¸€è‡´
+ * ²âÊÔ½âÎö×´Ì¬ÂëºÍÀàÐÍÊÇ·ñºÍÔ¤ÆÚÒ»ÖÂ
  */
 #define TEST_STATE_AND_TYPE(json,expect_type,expect_state)\
     do{                                   \
@@ -51,11 +52,11 @@ static int pass_test = 0;
     }while(0)
 
 static void test_parse_number(){
-    /* æµ‹è¯•æ•°å­—åˆæ³•çš„æƒ…å†µ */
+    /* ²âÊÔÊý×ÖºÏ·¨µÄÇé¿ö */
     TEST_NUMBER(0.0,"0");
     TEST_NUMBER(0.0,"-0");
 
-    /* ä¸‹é¢æ£€æµ‹ä¸€äº›ä¸åˆæ³•çš„æƒ…å†µ */
+    /* ÏÂÃæ¼ì²âÒ»Ð©²»ºÏ·¨µÄÇé¿ö */
     TEST_STATE_AND_TYPE("+0",C_UNKNOW,C_PARSE_INVALID_VALUE);
     TEST_STATE_AND_TYPE("+1",C_UNKNOW,C_PARSE_INVALID_VALUE);
     TEST_STATE_AND_TYPE(".123",C_UNKNOW,C_PARSE_INVALID_VALUE);
@@ -73,24 +74,63 @@ static void test_parse_string(){
     TEST_STRING("\xF0\x9D\x84\x9E", "\"\\ud834\\udd1e\"");  /* G clef sign U+1D11E */
 }
 
+static void printarray(c_value* v){
+    assert( v!=NULL && v->type==C_ARRAY );
+    size_t siz = c_get_arraysize( v );
+    printf("Êý×éÔªËØsize = %zu\n", siz );
+    c_value* now = v->a.e;
+    for(int i=0;i<siz;i++){
+        printf("µÚ%d¸öÔªËØ:  ",i );
+        if( now[i].type == C_NUMBER ){
+            printf("Êý×ÖÊÇ%.3lf\n",now[i].n );
+        }else if( now[i].type == C_TRUE ){
+            printf(" TRUEÀàÐÍ \n");
+        }else if( now[i].type == C_FALSE ) {
+            printf(" FALSEÀàÐÍ \n");
+        }else if( now[i].type == C_NULL ) {
+            printf(" NULLÀàÐÍ \n");
+        }else if( now[i].type == C_STRING ){
+            printf("stringÀàÐÍ: %s\n",now[i].s.s );
+        }else if( now[i].type == C_ARRAY ){
+            printf("arrayÀàÐÍ,ÔªËØ¸öÊýÎª%zu\n",now[i].a.size );
+        }else{
+            printf("Î´ÖªÀàÐÍ\n");
+        }
+    }
+}
+
+static void test_parse_array(){
+    c_value v;
+    EXPECT_EQ_INT(C_PARSE_OK, c_parse(&v,"[]") );
+    EXPECT_EQ_INT(C_ARRAY, c_get_type(&v) );
+    EXPECT_EQ_SIZE_T(0,c_get_arraysize(&v) );
+
+    EXPECT_EQ_INT(C_PARSE_OK,c_parse(&v,"[ null , false , true , 123 , \"abc\" ]"));
+ /*   printarray( &v );  */
+
+    EXPECT_EQ_INT(C_PARSE_OK,c_parse(&v," [ [ ] , [ 0 ] , [ 0 , 1 ] , [ 0 , 1 , 2 ] ]") );
+    printarray( &v );
+    c_free( &v );
+}
+
 static void test_parse_expect_value(){
 
 }
 /*
- * æµ‹è¯•æ— æ³•æˆåŠŸè§£æžçš„æ¡ˆä¾‹
+ * ²âÊÔÎÞ·¨³É¹¦½âÎöµÄ°¸Àý
  */
 static void test_parse_invalid_value(){
     TEST_STATE_AND_TYPE("  ???  ",C_UNKNOW,C_PARSE_INVALID_VALUE);
 }
 /*
- * æµ‹è¯•æˆåŠŸè§£æžæŽ‰ä¸€ä¸ªå€¼åŽ, åŽé¢ä»æœ‰å…¶ä»–å­—ç¬¦è€Œä¸æ˜¯'\0'
+ * ²âÊÔ³É¹¦½âÎöµôÒ»¸öÖµºó, ºóÃæÈÔÓÐÆäËû×Ö·û¶ø²»ÊÇ'\0'
  */
 static void test_parse_root_not_singular(){
     TEST_STATE_AND_TYPE("nulll",C_UNKNOW,C_PARSE_ROOT_NOT_SINGULAR);
     TEST_STATE_AND_TYPE("null x",C_UNKNOW,C_PARSE_ROOT_NOT_SINGULAR);
 }
 /*
- * æµ‹è¯•æˆåŠŸè§£æžçš„æ¡ˆä¾‹
+ * ²âÊÔ³É¹¦½âÎöµÄ°¸Àý
  */
 static void test_parse_ok(){
     TEST_STATE_AND_TYPE("null",C_NULL,C_PARSE_OK);
@@ -104,6 +144,7 @@ static void test_parse(){
 
     test_parse_number();
     test_parse_string();
+    test_parse_array();
 }
 static void test_k(){
     c_value v;

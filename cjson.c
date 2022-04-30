@@ -196,12 +196,64 @@ static int parse_string(base_json* js,c_value* v){
     }
 }
 
+static int parse_value(base_json* c, c_value* v);
+
+static int parse_array(base_json* js,c_value* v){
+    /* struct{ c_value* e; size_t size; }a;  */
+    int state,siz;
+    c_value* ref;
+    siz = 0;
+    js->json++;  /* [  */
+    clear_whitespace( js );
+    if( js->json[0] == ']' ){
+        js->json++;
+        v->type = C_ARRAY;
+        v->a.e = NULL;
+        v->a.size = 0;
+        return C_PARSE_OK;
+    }
+    while( 1 ){
+        c_value now;
+        now.type = C_UNKNOW;
+        clear_whitespace( js ); /* ,或[ 与后面元素 之间的空格 */
+        if( ( state = parse_value(js,&now) )!=C_PARSE_OK ){
+            int i;
+            for(i = 0;i<siz;i++)
+                c_free( (c_value*)base_json_pop(js,sizeof(c_value) ));
+            return state;
+        }
+        clear_whitespace( js );  /* 消除元素和后面,或] 之间的空格  */
+        siz++;
+        memcpy( base_json_push( js,sizeof(c_value) ),&now,sizeof(c_value) );
+        clear_whitespace( js );
+        if( js->json[0] == ',' ){
+            js->json++;
+        }
+        else if( js->json[0] == ']' ){  /* 解析完成 */
+            js->json++;
+            v->type = C_ARRAY;
+            v->a.size = siz;
+            siz *= sizeof( c_value );
+            v->a.e = (c_value*)malloc( siz );
+            memcpy( v->a.e, base_json_pop(js,siz), siz );
+            return C_PARSE_OK;
+        }
+        else{
+            int i;
+            for(i = 0;i<siz;i++)
+                c_free( (c_value*)base_json_pop(js,sizeof(c_value) ));
+            return C_PARSE_MISS_COMMA_OR_SQUARE_BRACKET;
+        }
+    }
+}
+
 static int parse_value(base_json* js,c_value* v){
     switch(*js->json){
         case 'n': return parse_const(js,v,"null",C_NULL);
         case 't': return parse_const(js,v,"true",C_TRUE);
         case 'f': return parse_const(js,v,"false",C_FALSE);
         case '"': return parse_string(js,v);
+        case '[': return parse_array(js,v);
         case '\0': return C_PARSE_EXPECT_VALUE;
         default: return parse_number(js,v);
     }
@@ -236,6 +288,11 @@ void c_free(c_value* v){
     assert( v != NULL );
     if( v->type == C_STRING ){
         free( v->s.s );
+    }else if( v->type == C_ARRAY ){
+        int i;
+        for(i=0;i<v->a.size;i++)
+            c_free( &v->a.e[i] );
+        free( v->a.e );
     }
     v->type = C_UNKNOW;
 }
@@ -253,6 +310,11 @@ size_t c_get_stringlen(const c_value* v){
 const char* c_get_string(const c_value* v){
     assert( v!=NULL && v->type == C_STRING );
     return v->s.s;
+}
+
+size_t c_get_arraysize(const c_value* v){
+    assert( v!=NULL && v->type==C_ARRAY );
+    return v->a.size;
 }
 
 /*  把s表示的字符串复制到c_value中去 */

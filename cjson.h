@@ -8,6 +8,7 @@ typedef enum{
     C_TRUE,
     C_NUMBER,
     C_STRING,
+    C_ARRAY,
 }c_type;
 
 /*
@@ -24,6 +25,7 @@ enum{
     C_PARSE_INVALID_STRING_ESCAPE,
     LEPT_PARSE_INVALID_UNICODE_HEX,  /* \uxxxx的格式不正确 */
     C_PARSE_INVALID_UNICODE_SURROGATE,
+    C_PARSE_MISS_COMMA_OR_SQUARE_BRACKET,
 };
 
 typedef struct c_value c_value;
@@ -33,6 +35,7 @@ typedef struct c_value c_value;
  */
 struct c_value{
     union{
+        struct{ c_value* e; size_t size; }a;
         double n; /* number */
         struct{ char* s; size_t len; }s; /* string */
     };
@@ -55,11 +58,14 @@ double c_get_number(const c_value* v);
 size_t c_get_stringlen(const c_value* v);
 /* 得到string */
 const char* c_get_string(const c_value* v);
+/* 得到数组大小 */
+size_t c_get_arraysize(const c_value* v);
 
 /* 设置数字 */
 void c_set_number(c_value *v,double val);
 /* 设置string */
 void c_set_string(c_value* v,const char* s,size_t len);
-
+/* 设置数组元素 */
+c_value* c_get_array_element(const c_value* v,size_t index);
 
 #endif
