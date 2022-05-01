@@ -137,6 +137,62 @@ static void test_parse_ok(){
     TEST_STATE_AND_TYPE("false",C_FALSE,C_PARSE_OK);
     TEST_STATE_AND_TYPE("true",C_TRUE,C_PARSE_OK);
 }
+static void test_parse_object(){
+    c_value v;
+    size_t i;
+
+    EXPECT_EQ_INT(C_PARSE_OK, c_parse(&v, " { } "));
+    EXPECT_EQ_INT(C_OBJECT, c_get_type(&v));
+    EXPECT_EQ_SIZE_T(0, c_get_object_size(&v));
+    c_free(&v);
+
+    EXPECT_EQ_INT(C_PARSE_OK, c_parse(&v,
+                                            " { "
+                                            "\"n\" : null , "
+                                            "\"f\" : false , "
+                                            "\"t\" : true , "
+                                            "\"i\" : 123 , "
+                                            "\"s\" : \"abc\", "
+                                            "\"a\" : [ 1, 2, 3 ],"
+                                            "\"o\" : { \"1\" : 1, \"2\" : 2, \"3\" : 3 }"
+                                            " } "
+    ));
+    EXPECT_EQ_INT(C_OBJECT, c_get_type(&v));
+    EXPECT_EQ_SIZE_T(7, c_get_object_size(&v));
+    EXPECT_EQ_STRING("n", c_get_object_key(&v, 0), c_get_object_key_length(&v, 0));
+    EXPECT_EQ_INT(C_NULL,   c_get_type(c_get_object_value(&v, 0)));
+    EXPECT_EQ_STRING("f", c_get_object_key(&v, 1), c_get_object_key_length(&v, 1));
+    EXPECT_EQ_INT(C_FALSE,  c_get_type(c_get_object_value(&v, 1)));
+    EXPECT_EQ_STRING("t", c_get_object_key(&v, 2), c_get_object_key_length(&v, 2));
+    EXPECT_EQ_INT(C_TRUE,   c_get_type(c_get_object_value(&v, 2)));
+    EXPECT_EQ_STRING("i", c_get_object_key(&v, 3), c_get_object_key_length(&v, 3));
+    EXPECT_EQ_INT(C_NUMBER, c_get_type(c_get_object_value(&v, 3)));
+    EXPECT_EQ_DOUBLE(123.0, c_get_number(c_get_object_value(&v, 3)));
+    EXPECT_EQ_STRING("s", c_get_object_key(&v, 4), c_get_object_key_length(&v, 4));
+    EXPECT_EQ_INT(C_STRING, c_get_type(c_get_object_value(&v, 4)));
+    EXPECT_EQ_STRING("abc", c_get_string(c_get_object_value(&v, 4)), c_get_stringlen(c_get_object_value(&v, 4)));
+    EXPECT_EQ_STRING("a", c_get_object_key(&v, 5), c_get_object_key_length(&v, 5));
+    EXPECT_EQ_INT(C_ARRAY, c_get_type(c_get_object_value(&v, 5)));
+    EXPECT_EQ_SIZE_T(3, c_get_arraysize(c_get_object_value(&v, 5)));
+    for (i = 0; i < 3; i++) {
+        c_value* e = c_get_array_element(c_get_object_value(&v, 5), i);
+        EXPECT_EQ_INT(C_NUMBER, c_get_type(e));
+        EXPECT_EQ_DOUBLE(i + 1.0, c_get_number(e));
+    }
+    EXPECT_EQ_STRING("o", c_get_object_key(&v, 6), c_get_object_key_length(&v, 6));
+    {
+        c_value* o = c_get_object_value(&v, 6);
+        EXPECT_EQ_INT(C_OBJECT, c_get_type(o));
+        for (i = 0; i < 3; i++) {
+            c_value* ov = c_get_object_value(o, i);
+            /* EXPECT_TRUE('1' + i == c_get_object_key(o, i)[0]); */
+            EXPECT_EQ_SIZE_T(1, c_get_object_key_length(o, i));
+            EXPECT_EQ_INT(C_NUMBER, c_get_type(ov));
+            EXPECT_EQ_DOUBLE(i + 1.0, c_get_number(ov));
+        }
+    }
+    c_free(&v);
+}
 static void test_parse(){
     test_parse_ok();
     test_parse_invalid_value();
@@ -145,6 +201,8 @@ static void test_parse(){
     test_parse_number();
     test_parse_string();
     test_parse_array();
+
+    test_parse_object();
 }
 static void test_k(){
     c_value v;
@@ -153,7 +211,7 @@ static void test_k(){
 }
 int main() {
 
-    test_parse();
+     test_parse();
 
     printf("%d/%d (%3.2f%%) passed\n", pass_test, total_test, pass_test * 100.0 / total_test);
 }

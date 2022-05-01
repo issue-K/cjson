@@ -15,10 +15,10 @@
 typedef struct{
     const char* json;
     char* stack;
-    size_t size, top; /* sizeè¡¨ç¤ºstackåˆ†é…çš„ç©ºé—´,topè¡¨ç¤ºç”¨æ‰çš„ç©ºé—´*/
+    size_t size, top; /* size±íÊ¾stack·ÖÅäµÄ¿Õ¼ä,top±íÊ¾ÓÃµôµÄ¿Õ¼ä*/
 }base_json;
 
-/* ç°åœ¨è¦æ–°å¢sizeä¸ªå­—ç¬¦, äºæ˜¯ç»™base_jsonæ‰©å®¹, å¹¶è¿”å›ç¬¬ä¸€ä¸ªæ²¡è¢«å ç”¨çš„ä½ç½® */
+/* ÏÖÔÚÒªĞÂÔösize¸ö×Ö·û, ÓÚÊÇ¸øbase_jsonÀ©Èİ, ²¢·µ»ØµÚÒ»¸öÃ»±»Õ¼ÓÃµÄÎ»ÖÃ */
 static void* base_json_push(base_json* c,size_t size){
     assert( size>0 );
     void* ref;
@@ -26,7 +26,7 @@ static void* base_json_push(base_json* c,size_t size){
         if( c->size==0 )
             c->size = C_STACK_INIT_SIZE;
         while( c->top + size >= c->size ){
-            c->size += c->size>>1;  /* æ¯æ¬¡æ‰©å®¹ä¸ºåŸæ¥çš„1.5å€ */
+            c->size += c->size>>1;  /* Ã¿´ÎÀ©ÈİÎªÔ­À´µÄ1.5±¶ */
         }
         c->stack = (char*)realloc(c->stack,c->size);
     }
@@ -73,27 +73,27 @@ static int parse_const(base_json* js,c_value* v,const char* str,c_type type){
 static int parse_number(base_json* js,c_value* v){
     const char* p = js->json;
     if( (*p)=='-' ) p++;
-    /* æ¶ˆé™¤æ•´æ•°éƒ¨åˆ† */
+    /* Ïû³ıÕûÊı²¿·Ö */
     if( !is19(p) ){
         if( (*p)!='0' ) return C_PARSE_INVALID_VALUE;
         p++;
     }else{
         while( is09((p)) ) p++;
     }
-    /* å­˜åœ¨å°æ•°éƒ¨åˆ† */
+    /* ´æÔÚĞ¡Êı²¿·Ö */
     if( (*p)=='.' ){
         p++;
         if( !is09(p) )   return C_PARSE_INVALID_VALUE;
         while( is09(p) )    p++;
     }
-    /* å­˜åœ¨æŒ‡æ•°éƒ¨åˆ† */
+    /* ´æÔÚÖ¸Êı²¿·Ö */
     if( (*p)=='e' || (*p)=='E' ){
         p++;
         if( (*p)=='-' || (*p)=='+' )    p++;
         if( !is09(p) )   return C_PARSE_INVALID_VALUE;
         while( is09(p)  )   p++;
     }
-    errno = 0; /* è®°å½•æœ€åä¸€æ¬¡é”™è¯¯çš„é”™è¯¯ç  */
+    errno = 0; /* ¼ÇÂ¼×îºóÒ»´Î´íÎóµÄ´íÎóÂë */
     v->n = strtod( js->json,NULL );
     if( errno == ERANGE && (v->n == HUGE_VAL || v->n == -HUGE_VAL ) )
         return C_PARSE_NUMBER_TOO_BIG;
@@ -101,7 +101,7 @@ static int parse_number(base_json* js,c_value* v){
     v->type = C_NUMBER;
     return C_PARSE_OK;
 }
-/* 16è¿›åˆ¶è½¬åè¿›åˆ¶ */
+/* 16½øÖÆ×ªÊ®½øÖÆ */
 static const char* parse_hex4(const char* p,unsigned* u){
     int i;
     *u = 0;
@@ -115,12 +115,12 @@ static const char* parse_hex4(const char* p,unsigned* u){
     }
     return p;
 }
-// æŠŠæ•°å­—uè½¬åŒ–ä¸ºutf8äºŒè¿›åˆ¶çš„å½¢å¼
+// °ÑÊı×Öu×ª»¯Îªutf8¶ş½øÖÆµÄĞÎÊ½
 static void encode_utf8(base_json* js,unsigned u){
-    if( u<=0x7F )  /* å•å­—èŠ‚æ•°å­— */
-        PUTC(js,u & 0xFF );   // å’Œ255ä¸ä¸€ä¸‹ä¿è¯åªæœ‰ä½8ä½æœ‰å€¼
+    if( u<=0x7F )  /* µ¥×Ö½ÚÊı×Ö */
+        PUTC(js,u & 0xFF );   // ºÍ255ÓëÒ»ÏÂ±£Ö¤Ö»ÓĞµÍ8Î»ÓĞÖµ
     else if( u<=0x7FF ){
-        PUTC(js,0xC0 | (( u>>6 ) & 0xFF )  );  // 0xC0æ˜¯ç¬¬ä¸€ä¸ªå­—èŠ‚çš„110å‰ç¼€
+        PUTC(js,0xC0 | (( u>>6 ) & 0xFF )  );  // 0xC0ÊÇµÚÒ»¸ö×Ö½ÚµÄ110Ç°×º
         PUTC(js, 0x80 | ( u       & 0x3F));
     }
     else if (u <= 0xFFFF) {
@@ -137,20 +137,19 @@ static void encode_utf8(base_json* js,unsigned u){
     }
 }
 
-static int parse_string(base_json* js,c_value* v){
-    size_t head = js->top, len;
+static int c_parse_string_raw(base_json* js,char** str,size_t* len){
     js->json++;
     const char* p = js->json;
     void* ref;
     unsigned u,u1;
+    size_t head = js->top;
     while( 1 )
     {
         char c = *p++;
         switch(c){
             case '"':
-                len = js->top - head;
-                ref = base_json_pop(js,len);
-                c_set_string(v,(const char*)ref,len );
+                *len = js->top - head;
+                *str = base_json_pop(js,*len);
                 js->json = p;
                 return C_PARSE_OK;
             case '\\':
@@ -196,6 +195,18 @@ static int parse_string(base_json* js,c_value* v){
     }
 }
 
+static int parse_string(base_json* js,c_value* v){
+    int state;
+    char* s;  /* ÔİÊ±´æ´¢×Ö·û´®µÄÊı×é */
+    size_t len;
+    state = c_parse_string_raw(js,&s,&len);
+    if( state == C_PARSE_OK ){
+        // sÊÇÕ»ÖĞs.top-lenµÄÎ»ÖÃ
+        c_set_string(v,s,len);
+    }
+    return state;
+}
+
 static int parse_value(base_json* c, c_value* v);
 
 static int parse_array(base_json* js,c_value* v){
@@ -215,21 +226,21 @@ static int parse_array(base_json* js,c_value* v){
     while( 1 ){
         c_value now;
         now.type = C_UNKNOW;
-        clear_whitespace( js ); /* ,æˆ–[ ä¸åé¢å…ƒç´  ä¹‹é—´çš„ç©ºæ ¼ */
+        clear_whitespace( js ); /* ,»ò[ ÓëºóÃæÔªËØ Ö®¼äµÄ¿Õ¸ñ */
         if( ( state = parse_value(js,&now) )!=C_PARSE_OK ){
             int i;
             for(i = 0;i<siz;i++)
                 c_free( (c_value*)base_json_pop(js,sizeof(c_value) ));
             return state;
         }
-        clear_whitespace( js );  /* æ¶ˆé™¤å…ƒç´ å’Œåé¢,æˆ–] ä¹‹é—´çš„ç©ºæ ¼  */
+        clear_whitespace( js );  /* Ïû³ıÔªËØºÍºóÃæ,»ò] Ö®¼äµÄ¿Õ¸ñ  */
         siz++;
         memcpy( base_json_push( js,sizeof(c_value) ),&now,sizeof(c_value) );
         clear_whitespace( js );
         if( js->json[0] == ',' ){
             js->json++;
         }
-        else if( js->json[0] == ']' ){  /* è§£æå®Œæˆ */
+        else if( js->json[0] == ']' ){  /* ½âÎöÍê³É */
             js->json++;
             v->type = C_ARRAY;
             v->a.size = siz;
@@ -247,6 +258,76 @@ static int parse_array(base_json* js,c_value* v){
     }
 }
 
+
+static int parse_object(base_json* js,c_value* v){
+    size_t i,size;
+    c_member m;
+    int state;
+    assert( js->json[0] == '{' );
+    js->json++;
+    clear_whitespace( js );
+    if( js->json[0] == '}' ){
+        js->json++;
+        v->type = C_OBJECT;
+        v->o.m = 0;  /* Ïàµ±ÓÚÖ¸Õë²»Ö¸ÏòÈÎºÎÖµ */
+        v->o.size = 0;
+        return C_PARSE_OK;
+    }
+    m.k = NULL;
+    size = 0;
+    while( 1 ){
+        char* str;
+        if( js->json[0] != '"' ){
+            state = C_PARSE_MISS_KEY;
+            break;
+        }
+        state = c_parse_string_raw(js,&str,&m.len );
+        if( state != C_PARSE_OK )   break;
+        memcpy( m.k = (char*)malloc(m.len+1),str,m.len );
+        m.k[m.len+1] = '\0';
+
+        clear_whitespace( js );
+        if( *js->json != ':' ){
+            state = C_PARSE_MISS_COLON;
+            break;
+        }
+        js->json++;
+        clear_whitespace( js );
+
+        state = parse_value(js,&m.v);
+        if( state != C_PARSE_OK ){
+            break;
+        }
+        memcpy(base_json_push(js,sizeof(c_member)),&m,sizeof(c_member) );
+        size++;
+        m.k = NULL;
+        clear_whitespace( js );
+        if( js->json[0] == ',' ){
+            js->json++;
+            clear_whitespace( js );
+        }else if( js->json[0] == '}' ){
+            size_t si = sizeof( c_member )*size;
+            js->json++;
+            v->type = C_OBJECT;
+            v->o.size = size;
+            memcpy( v->o.m = (c_member*)malloc(si), base_json_pop(js,si),si );
+            return C_PARSE_OK;
+        }else{
+            state = LEPT_PARSE_MISS_COMMA_OR_CURLY_BRACKET;
+            break;
+        }
+    }
+
+    free( m.k );
+    for( i=0;i<size;i++ ){
+        c_member* m = (c_member*) base_json_pop(js,sizeof(c_member) );
+        free( m->k );  /* ÊÍ·Å¼ü */
+        c_free( &m->v );
+    }
+    v->type = C_UNKNOW;
+    return state;
+}
+
 static int parse_value(base_json* js,c_value* v){
     switch(*js->json){
         case 'n': return parse_const(js,v,"null",C_NULL);
@@ -254,12 +335,13 @@ static int parse_value(base_json* js,c_value* v){
         case 'f': return parse_const(js,v,"false",C_FALSE);
         case '"': return parse_string(js,v);
         case '[': return parse_array(js,v);
+        case '{': return parse_object(js,v);
         case '\0': return C_PARSE_EXPECT_VALUE;
         default: return parse_number(js,v);
     }
 }
 
-/* è§£æjson */
+/* ½âÎöjson */
 int c_parse(c_value* v,const char* json){
     assert( v != NULL );
     v->type = C_UNKNOW;
@@ -268,7 +350,8 @@ int c_parse(c_value* v,const char* json){
     js.json = json;
     js.stack = NULL;
     js.size = js.top = 0;
-    clear_whitespace(&js);  /* è§£ææ‰å‰é¢çš„ç©ºæ ¼ */
+    clear_whitespace(&js);  /* ½âÎöµôÇ°ÃæµÄ¿Õ¸ñ */
+
     if( (state = parse_value(&js,v) ) == C_PARSE_OK){
         clear_whitespace( &js );
         if( *js.json != '\0' )
@@ -317,7 +400,7 @@ size_t c_get_arraysize(const c_value* v){
     return v->a.size;
 }
 
-/*  æŠŠsè¡¨ç¤ºçš„å­—ç¬¦ä¸²å¤åˆ¶åˆ°c_valueä¸­å» */
+/*  °Ñs±íÊ¾µÄ×Ö·û´®¸´ÖÆµ½c_valueÖĞÈ¥ */
 void c_set_string(c_value* v,const char* s,size_t len){
     assert( v!=NULL && ( s != NULL || len == 0) );
     c_free(v);
@@ -331,4 +414,34 @@ void c_set_string(c_value* v,const char* s,size_t len){
 void c_set_number(c_value* v,double val){
     assert( v!=NULL && v->type == C_NUMBER );
     v->n = val;
+}
+
+/* µÃµ½ */
+size_t c_get_object_size(const c_value* v ){
+    assert( v != NULL && v->type == C_OBJECT );
+    return v->o.size;
+}
+/* µÃµ½json¶ÔÏóµÄ¼ü */
+const char* c_get_object_key(const c_value* v,size_t index){
+    assert( v != NULL && v->type == C_OBJECT );
+    assert( index < v->o.size );
+    return v->o.m[index].k;
+}
+
+size_t c_get_object_key_length(const c_value* v,size_t index){
+    assert( v != NULL && v->type == C_OBJECT );
+    assert( index < v->o.size );
+    return v->o.m[index].len;
+}
+
+c_value* c_get_object_value(const c_value* v,size_t index){
+    assert( v != NULL && v->type == C_OBJECT );
+    assert( index < v->o.size );
+    return &v->o.m[index].v;
+}
+
+c_value* c_get_array_element(const c_value* v,size_t index){
+    assert( v!=NULL && v->type == C_ARRAY );
+    assert( index < v->a.size);
+    return &v->a.e[index];
 }

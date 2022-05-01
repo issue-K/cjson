@@ -9,6 +9,7 @@ typedef enum{
     C_NUMBER,
     C_STRING,
     C_ARRAY,
+    C_OBJECT,
 }c_type;
 
 /*
@@ -26,20 +27,29 @@ enum{
     LEPT_PARSE_INVALID_UNICODE_HEX,  /* \uxxxx的格式不正确 */
     C_PARSE_INVALID_UNICODE_SURROGATE,
     C_PARSE_MISS_COMMA_OR_SQUARE_BRACKET,
+    C_PARSE_MISS_KEY, /* 解析不到*/
+    C_PARSE_MISS_COLON,
+    LEPT_PARSE_MISS_COMMA_OR_CURLY_BRACKET,
 };
 
 typedef struct c_value c_value;
-
+typedef struct c_member c_member;
 /*
  * json键值对中,值的定义
  */
 struct c_value{
     union{
+        struct{ c_member* m; size_t size; }o;
         struct{ c_value* e; size_t size; }a;
         double n; /* number */
         struct{ char* s; size_t len; }s; /* string */
     };
     c_type type;
+};
+
+struct c_member{
+    char* k; size_t len;
+    c_value v;
 };
 
 #define c_init(v) do{ (v)->type = C_UNKNOW; }while(0)
@@ -60,6 +70,14 @@ size_t c_get_stringlen(const c_value* v);
 const char* c_get_string(const c_value* v);
 /* 得到数组大小 */
 size_t c_get_arraysize(const c_value* v);
+/* 得到 */
+size_t c_get_object_size(const c_value* v );
+/* 得到json对象的键 */
+const char* c_get_object_key(const c_value* v,size_t index);
+
+size_t c_get_object_key_length(const c_value* v,size_t index);
+
+c_value* c_get_object_value(const c_value* v,size_t index);
 
 /* 设置数字 */
 void c_set_number(c_value *v,double val);
