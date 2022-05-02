@@ -2,6 +2,7 @@
 #include <math.h> /* HUGE_VAL*/
 #include <string.h>
 #include <assert.h>
+#include <stdlib.h>
 #include "cjson.h"
 
 static int total_test = 0;
@@ -204,14 +205,28 @@ static void test_parse(){
 
     test_parse_object();
 }
-static void test_k(){
-    c_value v;
-    printf("%d\n",c_parse(&v,"\"hello\\nworld\"") );
-    printf("%d\n",c_get_type(&v) );
+
+#define TEST_ROUNDTRIP(json) \
+    do{\
+        c_value v;\
+        char* json2;         \
+        size_t len;          \
+        EXPECT_EQ_INT(C_PARSE_OK,c_parse(&v,json)); \
+        json2 = c_stringify(&v,&len);               \
+        EXPECT_EQ_STRING(json,json2,len );          \
+        c_free(&v);          \
+        free(json2);                         \
+    }while(0)
+static void test_stringify() {
+    TEST_ROUNDTRIP("null");
+    TEST_ROUNDTRIP("false");
+    TEST_ROUNDTRIP("true");
+    TEST_ROUNDTRIP("{}");
+    TEST_ROUNDTRIP("{\"n\":null,\"f\":false,\"t\":true,\"i\":123,\"s\":\"abc\",\"a\":[1,2,3],\"o\":{\"1\":1,\"2\":2,\"3\":3}}");
 }
 int main() {
 
-     test_parse();
-
+    test_parse();
+    test_stringify();
     printf("%d/%d (%3.2f%%) passed\n", pass_test, total_test, pass_test * 100.0 / total_test);
 }

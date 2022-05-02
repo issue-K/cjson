@@ -61,6 +61,8 @@ void c_free(c_value* v);
 /*  获取值的类型 */
 c_type c_get_type(const c_value* v);
 
+char* c_stringify(const c_value* v,size_t* len);
+
 
 /* 已知值是数字类型, 获取数字值*/
 double c_get_number(const c_value* v);
